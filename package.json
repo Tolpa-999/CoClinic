@@ -5,11 +5,11 @@
   "main": "server/app.js",
   "type": "module",
   "scripts": {
-    "test": "jest",
-    "client": "cd client && npm run dev",
-    "server": "nodemon app.js",
-    "start": "node app.js",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "nodemon server/app.js",
+    "start": "node server/app.js",
+    "build": "echo 'No build step required for Node.js API'"
+
   },
   "keywords": [
     "Telehealth",

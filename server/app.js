@@ -71,6 +71,10 @@ app.all("*", (req, res) => {
 
 app.use(errorHandler);
 
+
 server.listen(PORT, () => {
   console.log("Server is running on port 3000!");
 });
+
+
+export default app; // ES modules export
