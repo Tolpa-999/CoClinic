@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
 import cors from "cors";
 import multer from "multer";
 import bodyParser from "body-parser";
@@ -16,7 +18,6 @@ import commentRoutes from "./routes/comment.js";
 // import aiChatRoutes from "./routes/aichat.js";
 import {server, app} from './socket/index.js'
 import errorHandler from "./middleware/errorHandler.js";
-dotenv.config();
 
 connectDB();
 const PORT = process.env.PORT || 3000;
@@ -47,7 +48,7 @@ const upload = multer({ storage: storage });
 // Endpoint for uploading files
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
-    res.status(200).json({ url: `http://localhost:3000/uploads/${req.file.filename}` });
+    res.status(200).json({ url: process.env.BASE_URL + "/${req.file.filename}"});
   } catch (error) {
     res.status(500).json({ error: 'Failed to upload file' });
   }

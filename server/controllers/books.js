@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 
 import Book from '../models/Book.js';
 import ErrorResponse from '../utils/errorResponse.js';
@@ -23,7 +25,7 @@ export const createBook = async (req, res, next) => {
       return next(errorInValidation);
     }
     
-    const imageUrls = req.files ? req.files.map(file => `http://localhost:3000/uploads/${file.filename}`) : [];
+    const imageUrls = req.files ? req.files.map(file => process.env.BASE_URL + `/uploads/${file.filename}`) : [];
     
     // Handle file upload
     upload.array('images', 6)(req, res, async (err) => {
@@ -53,7 +55,7 @@ export const uploadImage = (req, res) => {
   
   try {
 
-    const data = req.files ? req.files.map(file => `http://localhost:3000/uploads/${file.filename}`) : [];
+    const data = req.files ? req.files.map(file => process.env.BASE_URL + `http/uploads/${file.filename}`) : [];
     res.json({ data, message: "book deleted successfully ", status: STATUS_CODE.SUCCESS });
   } catch (error) {
     res.status(500).json({ error: 'Image upload failed' });

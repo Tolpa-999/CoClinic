@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import ErrorResponse from "../utils/errorResponse.js";
 import getUserDetailsFromToken from "../utils/getUserDetailsFromToken.js";
@@ -6,6 +5,10 @@ import userManagemntValidator from "../schema/userManagementValidator.js";
 import calculateAge from "../utils/calculateAge.js";
 
 import {STATUS_CODE} from '../utils/httpStatusCode.js'
+
+
+import dotenv from "dotenv";
+dotenv.config();
 
 export const test = (req, res) => {
   res.status(200).json({
@@ -37,11 +40,18 @@ export const updateUser = async (req, res, next) => {
       return next(new ErrorResponse("User not found", 404));
     }
 
+  
     // Update fields
-    user.name = name;
-    user.email = email;
+
+    if (name ) {
+      user.name = name;
+    }
+
+    if (email) {
+      email
+    }
     user.avatar = profileImage
-      ? `http://localhost:3000/uploads/${profileImage}`
+      ? process.env.BASE_URL + `/uploads/${profileImage}`
       : user.avatar;
 
 
