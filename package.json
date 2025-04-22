@@ -1,0 +1,40 @@
+{
+  "name": "coclinic",
+  "version": "1.0.0",
+  "description": "An innovative telehealth platform designed to provide seamless healthcare services through live consultations and interactive AI support.",
+  "main": "server/app.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "client": "cd client && npm run dev",
+    "server": "nodemon app.js",
+    "start": "node app.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "Telehealth",
+    "coclinic"
+  ],
+  "author": "tammirat.kebede@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.5",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ioredis": "^5.6.1",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.7.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9"
+  }
+}

@@ -1,0 +1,599 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+import User from "../models/User.js";
+import ErrorResponse from "../utils/errorResponse.js";
+import catchAsync from "../utils/catchAsync.js";
+
+import authRequestsValidator from "../schema/userAuthValidator.js";
+
+import sendEmail from "../utils/sendEmail.js"
+
+import generateJWT from "../utils/generateJWT.js"
+
+import calculateAge from '../utils/calculateAge.js'
+
+import {STATUS_CODE} from '../utils/httpStatusCode.js'
+
+
+
+const verifyEmailBody = (passwordResetCode) => {
+  // sending password reset code the user email
+  return {
+    subject: "Email Verification",
+    message: `
+  <div style="
+    font-family: 'Arial', sans-serif;
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+  ">
+   
+
+    <!-- Headline -->
+    <h2 style="color: #2a9d8f; margin-bottom: 10px;">
+      Welcome to CoClinic!
+    </h2>
+
+    <!-- Subhead -->
+    <p style="font-size: 16px; color: #333333; margin-bottom: 30px;">
+      You’re one step away from accessing our telehealth platform.
+      Simply enter the code below to verify your email address:
+    </p>
+
+    <!-- Verification Code -->
+    <div style="
+      display: inline-block;
+      padding: 15px 25px;
+      font-size: 28px;
+      letter-spacing: 4px;
+      background-color: #e76f51;
+      color: #ffffff;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    ">
+      ${passwordResetCode}
+    </div>
+
+    <!-- Timer Notice -->
+    <p style="font-size: 14px; color: #f4a261; margin-bottom: 30px;">
+      This code expires in <strong>2 minutes</strong>.
+    </p>
+
+    <!-- Fallback -->
+    <p style="font-size: 14px; color: #666666;">
+      Didn’t sign up for CoClinic? No worries — you can safely ignore this message.
+    </p>
+
+    <!-- Footer -->
+    <hr style="border: none; height: 1px; background-color: #efefef; margin: 30px 0;" />
+    <p style="font-size: 12px; color: #999999;">
+      Need help? Contact us at
+      <a href="mailto:support@coclinic.com" style="color: #2a9d8f;">
+        support@coclinic.com
+      </a>
+    </p>
+    <p style="font-size: 12px; color: #cccccc;">
+      © 2025 CoClinic. All rights reserved.
+    </p>
+  </div>
+`
+  };
+};
+
+const generateResetToken = () => crypto.randomUUID()
+
+const resetPasswordTokenToMail = (token) => {
+  return {
+    subject: "Reset Password",
+    message: `<div style="
+    font-family: 'Arial', sans-serif;
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    line-height: 1.6;
+  ">
+
+    <!-- Headline -->
+    <h2 style="color: #2a9d8f; text-align: center; margin-bottom: 10px;">
+      Password Reset Request
+    </h2>
+
+    <!-- Intro -->
+    <p style="font-size: 16px; color: #333333; text-align: center; margin-bottom: 30px;">
+      Hi there,
+      <br><br>
+      We received a request to reset your password. Follow the simple steps below to regain access to your account:
+    </p>
+
+    <!-- Steps -->
+    <div style="text-align: left; margin-bottom: 30px;">
+      <ol style="padding-left: 20px; color: #333333;">
+        <li style="margin-bottom: 15px;">
+          <strong style="color: #2a9d8f;">Copy this reset token:</strong>
+          <div style="
+            display: inline-block;
+            margin-left: 10px;
+            padding: 10px 15px;
+            background-color: #e76f51;
+            color: #ffffff;
+            font-family: monospace;
+            letter-spacing: 2px;
+            border-radius: 4px;
+          ">
+            ${token}
+          </div>
+        </li>
+        <li style="margin-bottom: 15px;">
+          Open your API testing tool (e.g., Postman).
+        </li>
+        <li style="margin-bottom: 15px;">
+          Send a <strong>POST</strong> request to:
+          <br>
+          <code style="
+            display: block;
+            background: #f4f4f4;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 5px;
+          ">
+            ${process.env.BASE_URL}/api/auth/users/validtoken/${token}
+          </code>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Expiration Notice -->
+    <p style="font-size: 14px; color: #f4a261; text-align: center; margin-bottom: 30px;">
+      This token will expire in <strong>1 hour</strong>. If you didn’t request a password reset, you can safely ignore this email.
+    </p>
+
+    <!-- Footer -->
+    <hr style="border: none; height: 1px; background-color: #efefef; margin: 30px 0;" />
+    <p style="font-size: 12px; color: #666666; text-align: center;">
+      Need help? Reach out to our support team at
+      <a href="mailto:support@coclinic.com" style="color: #2a9d8f; text-decoration: none;">
+        support@coclinic.com
+      </a>
+    </p>
+    <p style="font-size: 12px; color: #cccccc; text-align: center;">
+      © 2025 CoClinic. All rights reserved.
+    </p>
+  </div>
+`
+  }
+}
+
+
+export const signup = catchAsync(async (req, res, next) => {
+  const { username, birthDate, name, email, password,  gender } = req.body;
+
+  const errorInValidation = authRequestsValidator("signup", req.body);
+  if (errorInValidation !== true) {
+    return next(errorInValidation);
+  }
+
+  const userEmail = await User.findOne({ email });
+  const userUsername = await User.findOne({ username });
+
+  const hashedPassword = await bcrypt.hash(password, 15);
+  // const hashedPassword = password
+
+  if (userEmail) {
+    if (userEmail.emailVerified) {
+      return next(new ErrorResponse("Email already exists.", 400));
+    }
+
+    userEmail.name = name;
+    userEmail.password = hashedPassword;
+    userEmail.username = username;
+    userEmail.birthDate = birthDate;
+    userEmail.gender = gender;
+    const emailVerificationCode =
+      userEmail.generateEmailVerificationCodeForUsers();
+      
+    await userEmail.save({ validateBeforeSave: false });
+
+    const emailBody = verifyEmailBody(emailVerificationCode);
+
+    try {
+      const info = await sendEmail({
+        html: emailBody.message,
+        subject: emailBody.subject,
+        to: email,
+      });
+
+      if (info.rejected.length > 0) {
+        return next(new ErrorResponse("Something went wrong ", 400));
+      }
+    } catch (err) {
+      console.log(err);
+      next(
+        new ErrorResponse(
+          "An error occurred while sending the email. Please try again later",
+          500
+        )
+      );
+    }
+
+    return res.status(200).json({
+
+        user: {
+        name: name,
+        email: email,
+        username: username,
+        birthDate: birthDate,
+        gender: gender,
+        isDoctor: userEmail?.isDoctor,
+      },
+        status: STATUS_CODE.SUCCESS,
+        message: "Verification email sent please verify your email ",
+    });
+  }
+
+  if (userUsername) {
+    if (userUsername.emailVerified) {
+      return next(new ErrorResponse("Username already exists.", 400));
+    }
+
+    userUsername.name = name;
+    userUsername.email = email;
+    userUsername.password = hashedPassword;
+    userUsername.birthDate = birthDate;
+    userUsername.gender = gender;
+    const emailVerificationCode =
+      userUsername.generateEmailVerificationCodeForUsers();
+    await userUsername.save({ validateBeforeSave: false });
+
+    const emailBody = verifyEmailBody(emailVerificationCode);
+
+    try {
+      const info = await sendEmail({
+        html: emailBody.message,
+        subject: emailBody.subject,
+        to: userUsername.email,
+      });
+
+      if (info.rejected.length > 0) {
+        return next(new ErrorResponse("Something went wrong ", 400));
+      }
+    } catch (err) {
+      console.log(err);
+      next(
+        new ErrorResponse(
+          "An error occurred while sending the email. Please try again later",
+          500
+        )
+      );
+    }
+
+    return res.status(200).json({
+        user: {name,
+        email,
+        username,
+        birthDate,
+        isDoctor: userUsername?.isDoctor,
+        gender,
+      },
+        status: STATUS_CODE.SUCCESS,
+        message: "Verification email sent please verify your email ",
+    });
+  }
+
+  
+
+  const newUser = new User({
+    username,
+    name,
+    birthDate,
+    email,
+    gender,
+    password: hashedPassword,
+  });
+
+  const emailVerificationCode = newUser.generateEmailVerificationCodeForUsers();
+  await newUser.save({ validateBeforeSave: false });
+
+  const emailBody = verifyEmailBody(emailVerificationCode);
+
+  try {
+    const info = await sendEmail({
+      html: emailBody.message,
+      subject: emailBody.subject,
+      to: email,
+    });
+
+    if (info.rejected.length > 0) {
+      return next(new ErrorResponse("Something went wrong ", 400));
+    }
+  } catch (err) {
+    console.log(err);
+    next(
+      new ErrorResponse(
+        "An error occurred while sending the email. Please try again later",
+        500
+      )
+    );
+  }
+
+  await newUser.save();
+
+  res.status(201).json({
+    user: {
+      name,
+      email,
+      username,
+      birthDate,
+      isAdmin: newUser?.isAdmin,
+      isDoctor: newUser?.isDoctor,
+      gender
+    },
+    status: STATUS_CODE.SUCCESS,
+        message: "Verification email sent please verify your email ",
+  });
+});
+
+export const verifyEmail = async (req, res, next) => {
+  const error = authRequestsValidator("verifyUser", req.body);
+  if (error !== true) {
+    return next(error);
+  }
+
+  const { email, confirmCode } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user)
+    return next(
+      new ErrorResponse("There is no user with this email address", 404)
+    );
+
+  //check if the confirmation code is correct
+  if (user.emailVerifiedCode !== confirmCode)
+    return next(
+      new ErrorResponse("Incorrect confirmation code, please try again", 400)
+    );
+
+  //  check if the code still valid :
+  if (user.emailVerifiedCodeExpireIn < Date.now())
+    return next(
+      new ErrorResponse(
+        "This code not valid any more please try another one",
+        400
+      )
+    );
+
+  // if every thing ok then allow him to change his password and send response back
+  user.emailVerified = true;
+  user.emailVerifiedCode = undefined;
+  user.emailVerifiedCodeExpireIn = undefined;
+
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    status: STATUS_CODE.SUCCESS,
+    message: "Your email has been verified successfully ",
+  });
+};
+
+export const signin = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  const errorInValidation = authRequestsValidator("signin", req.body);
+  if (errorInValidation !== true) return next(errorInValidation);
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return next(new ErrorResponse("User not found", 404));
+    }
+
+    if (!user.emailVerified) {
+      return next(new ErrorResponse("User not verified", 400));
+    }
+
+    const isMatch = await user.matchPassword(password);
+
+    console.log("is match ===> ",isMatch)
+
+    if (!isMatch) {
+      return next(new ErrorResponse("Invalid email or password", 400));
+    }
+
+    // const accessToken = generateJWT({ userId: user._id }, "1h");
+
+    
+    const token = generateJWT({ userId: user._id }, "30d");
+
+
+    const readableAge = calculateAge(user.birthDate)
+
+
+    res
+      .cookie("token", token, {
+        httpOnly: true, // Prevents client-side JavaScript access
+        // secure: true, // Ensures it is sent over HTTPS
+        // sameSite: "None", // Allows sharing cookies across different domains
+        maxAge: 30 * 24 * 60 * 60 * 1000, // Expires in 30 days
+      })
+
+      .status(200)
+
+      .json({
+        data: {
+          token,
+          // user: {
+            _id: user._id,
+            username: user.username,
+            name: user.name,
+            gender: user.gender,
+            email: user.email,
+            age: readableAge,
+            isAdmin: user?.isAdmin,
+            isDoctor: user?.isDoctor,
+            avatar: user?.avatar
+          // },
+        },
+        status: STATUS_CODE.SUCCESS,
+        message: "Logged in successfully",
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const forgetPassword = async (req, res, next) => {
+  // 1) get the user based on posted email :
+
+  const { email } = req.body;
+
+  const validationError = authRequestsValidator("reset_password_request", req.body);
+  if (validationError !== true) {
+    return next(validationError);
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user)
+    return next(new ErrorResponse( 'There is no user with this email address', 404,));
+
+  //2) generate reset password :
+  const token = generateResetToken();
+
+  user.resetPasswordToken = token;
+  user.resetPasswordExpires = Date.now() + 800000;
+  await user.save({ validateBeforeSave: false });
+
+  const resetPasswordToken = resetPasswordTokenToMail(token)
+
+
+  try {
+    const info = await sendEmail({ html: resetPasswordToken.message, subject: resetPasswordToken.subject, to: user.email });
+
+    if (info.rejected.length > 0) {
+      return next(
+        new ErrorResponse(
+          'Something wrong with this email maybe it does not exist',
+
+          400,
+        )
+      );
+    }
+
+    res.status(200).json({
+      status: STATUS_CODE.SUCCESS,
+      message: 'reset password message sent to your email successfully',
+    });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+}
+
+export const validPasswordToken = async(req, res ,next) => {
+  const { token } = req.params;
+
+  const errorInValidation = authRequestsValidator("valid_password_token", {token});
+  if (errorInValidation !== true) {
+    return next(errorInValidation)
+  }
+  
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return res.status(400).json({ 
+      status: STATUS_CODE.FAILED,
+      message: 'Invalid or expired token' });
+  }
+  res.status(200).json({ status: STATUS_CODE.SUCCESS,
+    message: "token is valid",});
+}
+
+export const resetPassword = async (req, res, next) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const validationError = authRequestsValidator("reset_password", {token, password});
+  if (validationError !== true) {
+    return next(validationError);
+  }
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return res.status(400).json({ 
+      status: STATUS_CODE.FAILED,
+      message: 'Invalid or expired token' });
+  }
+  
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  user.password = hashedPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+
+  await user.save({validateBeforeSave: false});
+
+  res.status(200).json({ 
+    status: STATUS_CODE.SUCCESS,
+    message: 'Password successfully reset' });
+} 
+
+
+export const google = async (req, res, next) => {
+  try {
+    const { name, email, avatar } = req.body;
+    let user = await User.findOne({ email });
+    if (user) {
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+      const { password: pwd, ...userData } = user._doc;
+      return res
+        .cookie("token", token, { httpOnly: true })
+        .status(200)
+        .json(userData);
+    }
+    const generatedPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+    user = await User({
+      username:
+        name.split(" ").join("").toLowerCase() +
+        Math.random().toString(36).slice(-4),
+      email,
+      password: hashedPassword,
+      avatar,
+    });
+    await user.save();
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const { password: pwd, ...userData } = user._doc;
+
+    res
+      .cookie("token", token, { httpOnly: true })
+      .status(200)
+      .json(userData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const signout = async (req, res, next) => {
+  try {
+    res.clearCookie("token");
+    res.status(200).json("User has been logged out!");
+  } catch (error) {
+    next(error);
+  }
+};
