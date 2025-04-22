@@ -33,7 +33,7 @@ export const createComment = async (req, res, next) => {
     });
     await data.save();
 
-    res.status(200).json({date, 
+    res.status(200).json({data, 
       status: STATUS_CODE.SUCCESS,
       message: "comment created successfully",});
   } catch (error) {
