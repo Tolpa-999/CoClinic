@@ -20,9 +20,9 @@ export const updateUser = async (req, res, next) => {
       new ErrorResponse("You can only update your own account", 401)
     );
   }
-  const { name, email } = req.body;
+  const { name, email } = req?.body;
 
-  const errorInValidation = userManagemntValidator("updateUser", {name, email});
+  const errorInValidation = userManagemntValidator("updateUser", req.body);
 
   if (errorInValidation !== true) {
     return next(errorInValidation);
