@@ -86,7 +86,6 @@ const verifyEmailBody = (passwordResetCode) => {
   };
 };
 
-const generateResetToken = () => crypto.randomUUID()
 
 const resetPasswordTokenToMail = (code, userEmail) => {
   return {
@@ -125,35 +124,9 @@ const resetPasswordTokenToMail = (code, userEmail) => {
             border-radius: 6px;
           ">${code}</span>
         </div>
-        <p style="font-size: 16px; color: #333333; margin-bottom: 20px;">
-          Then send a <strong>POST</strong> to:
-          <br>
-          <code style="
-            display: block;
-            background: #f4f4f4;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: monospace;
-            margin: 10px 0;
-          ">
-            ${process.env.BASE_URL}/api/auth/password-reset
-          </code>
-          with JSON body:
-          <pre style="
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-          ">
-{
-  "email": "${userEmail}",
-  "code": "${code}",
-  "newPassword": "YOUR_NEW_PASSWORD"
-}
-          </pre>
-        </p>
+        
         <p style="font-size: 14px; color: #f4a261; text-align: center; margin-bottom: 30px;">
-          This code expires in <strong>1 hour</strong>.  
+          This code expires in <strong>5 minutes</strong>.  
           If you didn’t request this, simply ignore this email.
         </p>
         <hr style="border: none; height: 1px; background-color: #efefef; margin: 30px 0;" />
