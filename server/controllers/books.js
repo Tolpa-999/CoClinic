@@ -8,6 +8,7 @@ import User from '../models/User.js';
 import bookManagemntValidator from '../schema/bookManagementValidator.js';
 
 import {STATUS_CODE} from "../utils/httpStatusCode.js"
+import catchAsync from "../utils/catchAsync.js";
 
 
 

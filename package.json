@@ -9,7 +9,6 @@
     "server": "nodemon server/app.js",
     "start": "node server/app.js",
     "build": "echo 'No build step required for Node.js API'"
-
   },
   "keywords": [
     "Telehealth",
@@ -31,6 +30,7 @@
     "mongoose": "^8.7.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.1",
+    "serverless-http": "^3.2.0",
     "socket.io": "^4.8.0"
   },
   "devDependencies": {

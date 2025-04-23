@@ -8,6 +8,7 @@ import {STATUS_CODE} from '../utils/httpStatusCode.js'
 
 
 import dotenv from "dotenv";
+import catchAsync from "../utils/catchAsync.js";
 dotenv.config();
 
 export const test = (req, res) => {

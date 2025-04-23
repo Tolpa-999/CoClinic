@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import commentManagementValidator from "../schema/commentManagmentValidator.js";
 
 import {STATUS_CODE} from "../utils/httpStatusCode.js"
+import catchAsync from "../utils/catchAsync.js";
 
 
 export const createComment = catchAsync(async (req, res, next) => {
