@@ -495,7 +495,7 @@ export const verifyCodeForResetPassword = catchAsync(async(req, res ,next) => {
 export const resetPassword = catchAsync(async (req, res, next) => {
   const { email, confirmCode, newPassword } = req.body;
 
-  const validationError = authRequestsValidator("reset_password", req.body);
+  const validationError = authRequestsValidator("reset_password", {email, confirmCode, newPassword});
   if (validationError !== true) {
     return next(validationError);
   }
