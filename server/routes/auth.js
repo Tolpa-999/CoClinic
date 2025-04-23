@@ -7,7 +7,7 @@ router.post("/signup", signup);
 router.post("/verify", verifyEmail);
 router.post("/signin", signin);
 router.post("/send-reset-password-code", forgetPassword);
-router.get("/reset-password-verify", verifyCodeForResetPassword);
+router.post("/reset-password-verify", verifyCodeForResetPassword);
 router.post("/password-reset", resetPassword);
 
 router.post("/google", google);
