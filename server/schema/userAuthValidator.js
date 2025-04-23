@@ -30,10 +30,6 @@ const schemas = {
     reset_password_request: Joi.object({
         email: Joi.string().email().required(),
     }),
-    
-    valid_password_token: Joi.object({
-        token: Joi.string().max(40).required(),
-    }),
 
     reset_password_verify: Joi.object({
         email: Joi.string().email().required(),
@@ -41,16 +37,11 @@ const schemas = {
     }),
 
     reset_password: Joi.object({
-        token: Joi.string().max(70).required(),
+        email: Joi.string().email().required(),
+        confirmCode: Joi.number().required(),
         password: Joi.string().min(8).max(30).required(),
     }),
 
-    change_password: Joi.object({
-        email: Joi.string().email().required(),
-        password: Joi.string().min(8).max(30).required(),
-        passwordConfirm: Joi.string().min(8).max(30).required()
-    }),
-    
 
     refreshToken: Joi.object({
         refreshToken: Joi.string().max(500),

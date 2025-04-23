@@ -88,55 +88,45 @@ const verifyEmailBody = (passwordResetCode) => {
 
 const generateResetToken = () => crypto.randomUUID()
 
-const resetPasswordTokenToMail = (token) => {
+const resetPasswordTokenToMail = (code, userEmail) => {
   return {
-    subject: "Reset Password",
-    message: `<div style="
-    font-family: 'Arial', sans-serif;
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    line-height: 1.6;
-  ">
-
-    <!-- Headline -->
-    <h2 style="color: #2a9d8f; text-align: center; margin-bottom: 10px;">
-      Password Reset Request
-    </h2>
-
-    <!-- Intro -->
-    <p style="font-size: 16px; color: #333333; text-align: center; margin-bottom: 30px;">
-      Hi there,
-      <br><br>
-      We received a request to reset your password. Follow the simple steps below to regain access to your account:
-    </p>
-
-    <!-- Steps -->
-    <div style="text-align: left; margin-bottom: 30px;">
-      <ol style="padding-left: 20px; color: #333333;">
-        <li style="margin-bottom: 15px;">
-          <strong style="color: #2a9d8f;">Copy this reset token:</strong>
-          <div style="
+    subject: "Password Reset Code",
+    message: `
+      <div style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        line-height: 1.6;
+      ">
+        <h2 style="color: #2a9d8f; text-align: center; margin-bottom: 10px;">
+          Your Password Reset Code
+        </h2>
+        <p style="font-size: 16px; color: #333333; text-align: center; margin-bottom: 30px;">
+          Hello,<br><br>
+          We received a request to reset the password for <strong>${userEmail}</strong>.  
+          Please copy the 4-digit code below and include it in your password-reset request:
+        </p>
+        <div style="
+          text-align: center;
+          margin-bottom: 30px;
+        ">
+          <span style="
             display: inline-block;
-            margin-left: 10px;
-            padding: 10px 15px;
-            background-color: #e76f51;
-            color: #ffffff;
+            padding: 15px 20px;
             font-family: monospace;
-            letter-spacing: 2px;
-            border-radius: 4px;
-          ">
-            ${token}
-          </div>
-        </li>
-        <li style="margin-bottom: 15px;">
-          Open your API testing tool (e.g., Postman).
-        </li>
-        <li style="margin-bottom: 15px;">
-          Send a <strong>POST</strong> request to:
+            font-size: 24px;
+            letter-spacing: 4px;
+            color: #ffffff;
+            background-color: #e76f51;
+            border-radius: 6px;
+          ">${code}</span>
+        </div>
+        <p style="font-size: 16px; color: #333333; margin-bottom: 20px;">
+          Then send a <strong>POST</strong> to:
           <br>
           <code style="
             display: block;
@@ -144,35 +134,42 @@ const resetPasswordTokenToMail = (token) => {
             padding: 8px;
             border-radius: 4px;
             font-family: monospace;
-            margin-top: 5px;
+            margin: 10px 0;
           ">
-            ${process.env.BASE_URL}/api/auth/users/validtoken/${token}
+            ${process.env.BASE_URL}/api/auth/password-reset
           </code>
-        </li>
-      </ol>
-    </div>
-
-    <!-- Expiration Notice -->
-    <p style="font-size: 14px; color: #f4a261; text-align: center; margin-bottom: 30px;">
-      This token will expire in <strong>1 hour</strong>. If you didn’t request a password reset, you can safely ignore this email.
-    </p>
-
-    <!-- Footer -->
-    <hr style="border: none; height: 1px; background-color: #efefef; margin: 30px 0;" />
-    <p style="font-size: 12px; color: #666666; text-align: center;">
-      Need help? Reach out to our support team at
-      <a href="mailto:support@coclinic.com" style="color: #2a9d8f; text-decoration: none;">
-        support@coclinic.com
-      </a>
-    </p>
-    <p style="font-size: 12px; color: #cccccc; text-align: center;">
-      © 2025 CoClinic. All rights reserved.
-    </p>
-  </div>
-`
-  }
+          with JSON body:
+          <pre style="
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+          ">
+{
+  "email": "${userEmail}",
+  "code": "${code}",
+  "newPassword": "YOUR_NEW_PASSWORD"
 }
-
+          </pre>
+        </p>
+        <p style="font-size: 14px; color: #f4a261; text-align: center; margin-bottom: 30px;">
+          This code expires in <strong>1 hour</strong>.  
+          If you didn’t request this, simply ignore this email.
+        </p>
+        <hr style="border: none; height: 1px; background-color: #efefef; margin: 30px 0;" />
+        <p style="font-size: 12px; color: #666666; text-align: center;">
+          Need help? Contact support at
+          <a href="mailto:support@coclinic.com" style="color: #2a9d8f; text-decoration: none;">
+            support@coclinic.com
+          </a>
+        </p>
+        <p style="font-size: 12px; color: #cccccc; text-align: center;">
+          © 2025 CoClinic. All rights reserved.
+        </p>
+      </div>
+    `
+  };
+};
 
 export const signup = catchAsync(async (req, res, next) => {
   const { username, birthDate, name, email, password,  gender } = req.body;
@@ -468,13 +465,13 @@ export const forgetPassword = async (req, res, next) => {
     return next(new ErrorResponse( 'There is no user with this email address', 404,));
 
   //2) generate reset password :
-  const token = generateResetToken();
+  
+  const passwordResetCode = user.generatePasswordResetCodeForUsers();
 
-  user.resetPasswordToken = token;
   user.resetPasswordExpires = Date.now() + 800000;
   await user.save({ validateBeforeSave: false });
 
-  const resetPasswordToken = resetPasswordTokenToMail(token)
+  const resetPasswordToken = resetPasswordTokenToMail(passwordResetCode, user.email)
 
 
   try {
@@ -500,16 +497,17 @@ export const forgetPassword = async (req, res, next) => {
   }
 }
 
-export const validPasswordToken = async(req, res ,next) => {
-  const { token } = req.params;
+export const verifyCodeForResetPassword = async(req, res ,next) => {
+  const { email, confirmCode } = req.body;
 
-  const errorInValidation = authRequestsValidator("valid_password_token", {token});
+  const errorInValidation = authRequestsValidator("reset_password_verify", req.body);
   if (errorInValidation !== true) {
     return next(errorInValidation)
   }
   
   const user = await User.findOne({
-    resetPasswordToken: token,
+    email,
+    passwordResetCode: confirmCode,
     resetPasswordExpires: { $gt: Date.now() },
   });
   if (!user) {
@@ -518,20 +516,20 @@ export const validPasswordToken = async(req, res ,next) => {
       message: 'Invalid or expired token' });
   }
   res.status(200).json({ status: STATUS_CODE.SUCCESS,
-    message: "token is valid",});
+    message: "Code verified, you can reset password",});
 }
 
 export const resetPassword = async (req, res, next) => {
-  const { token } = req.params;
-  const { password } = req.body;
+  const { email, confirmCode, newPassword } = req.body;
 
-  const validationError = authRequestsValidator("reset_password", {token, password});
+  const validationError = authRequestsValidator("reset_password", req.body);
   if (validationError !== true) {
     return next(validationError);
   }
 
   const user = await User.findOne({
-    resetPasswordToken: token,
+    email,
+    passwordResetCode: confirmCode,
     resetPasswordExpires: { $gt: Date.now() },
   });
   if (!user) {
@@ -540,19 +538,18 @@ export const resetPassword = async (req, res, next) => {
       message: 'Invalid or expired token' });
   }
   
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
   
   user.password = hashedPassword;
-  user.resetPasswordToken = undefined;
+  user.passwordResetCode = undefined;
   user.resetPasswordExpires = undefined;
 
   await user.save({validateBeforeSave: false});
 
   res.status(200).json({ 
     status: STATUS_CODE.SUCCESS,
-    message: 'Password successfully reset' });
+    message: 'Password has been reset successfully' });
 } 
-
 
 export const google = async (req, res, next) => {
   try {

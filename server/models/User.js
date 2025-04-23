@@ -37,12 +37,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    resetPasswordToken: {
-      type: String,
-      default: undefined
-    },
     resetPasswordExpires: {
       type: Date,
+      default: undefined
+    },
+    passwordResetCode: {
+      type: Number,
       default: undefined
     },
     avatar: {
@@ -59,7 +59,6 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: true
     },
-
     emailVerified: {
       type: Boolean,
       default: false
@@ -85,6 +84,8 @@ const userSchema = new mongoose.Schema(
 );
 
 
+
+
 // Define the `matchPassword` method to compare passwords
 userSchema.methods.matchPassword = async function (enteredPassword) {
   // console.log("entered password ===> ", enteredPassword)
@@ -95,7 +96,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return result
 };
 
+userSchema.methods.generatePasswordResetCodeForUsers = function () {
+  this.passwordResetCode = Math.floor(1000 + Math.random() * 9000);
+  
+  this.passwordResetCodeExpire = Date.now() + 60 * 5 * 1000;
 
+  return this.passwordResetCode;
+};
 
 
 userSchema.methods.generateEmailVerificationCodeForUsers = function () {
@@ -104,7 +111,6 @@ userSchema.methods.generateEmailVerificationCodeForUsers = function () {
 
   return this.emailVerifiedCode;
 };
-
 
 const User = mongoose.model('User', userSchema);
 
