@@ -7,8 +7,7 @@ import commentManagementValidator from "../schema/commentManagmentValidator.js";
 import {STATUS_CODE} from "../utils/httpStatusCode.js"
 
 
-export const createComment = async (req, res, next) => {
-  try {
+export const createComment = catchAsync(async (req, res, next) => {
     const { content, postId, userId } = req.body;
 
         const errorInValidation = commentManagementValidator("create", req.body);
@@ -36,13 +35,9 @@ export const createComment = async (req, res, next) => {
     res.status(200).json({data, 
       status: STATUS_CODE.SUCCESS,
       message: "comment created successfully",});
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const getPostComments = async (req, res, next) => {
-  try {
+export const getPostComments = catchAsync(async (req, res, next) => {
 
     const {startIndex, limit} = req.query
 
@@ -63,13 +58,9 @@ export const getPostComments = async (req, res, next) => {
 
     return res.status(200).json({data, status: STATUS_CODE.SUCCESS,
       message: "all comments on this post",});
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const likeComment = async (req, res, next) => {
-  try {
+export const likeComment = catchAsync(async (req, res, next) => {
     const data = await Comment.findById(req.params.id);
     if (!data) {
       return next(new ErrorResponse("Comment not found", 404));
@@ -88,13 +79,9 @@ export const likeComment = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
       message: "the comment has been liked successfully",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const editComment = async (req, res, next) => {
-  try {
+export const editComment = catchAsync(async (req, res, next) => {
     const comment = await Comment.findById(req.params.id);
     if (!comment) {
       return next(new ErrorResponse("Comment not found", 404));
@@ -119,13 +106,9 @@ export const editComment = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
         message: "the comment edit successfully",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const deleteComment = async (req, res, next) => {
-  try {
+export const deleteComment = catchAsync(async (req, res, next) => {
     const comment = await Comment.findById(req.params.id);
     if (!comment) {
       return next(new ErrorResponse("Comment not found", 404));
@@ -141,13 +124,9 @@ export const deleteComment = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
         message: "the comment deleted successfully",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const getcomments = async (req, res, next) => {
-  try {
+export const getcomments = catchAsync(async (req, res, next) => {
     if (!req.user.userId)
       return next(
         new ErrorResponse("You are not allowed to get all comments", 403)
@@ -178,7 +157,4 @@ export const getcomments = async (req, res, next) => {
     });
     res.status(200).json({ data, totalComments, lastMonthComments, status: STATUS_CODE.SUCCESS,
       message: "all comments", });
-  } catch (error) {
-    next(error);
-  }
-};
+});

@@ -11,9 +11,9 @@ import {STATUS_CODE} from "../utils/httpStatusCode.js"
 
 
 
+
 // Create Listing Endpoint with Multer Middleware
-export const createBook = async (req, res, next) => {
-  try {
+export const createBook = catchAsync(async (req, res, next) => {
 
     // const { name, email } = req.body;
 
@@ -46,12 +46,10 @@ export const createBook = async (req, res, next) => {
 
       return res.status(201).json({data, status: STATUS_CODE.SUCCESS, message: "book created successfully" });
     });
-  } catch (error) {
-    next(error);
-  }
-};
 
-export const uploadImage = (req, res) => {
+});
+
+export const uploadImage = catchAsync((req, res) => {
   
   try {
 
@@ -60,10 +58,10 @@ export const uploadImage = (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Image upload failed' });
   }
-};
+});
 
 
-export const deleteBook = async (req, res, next) => {
+export const deleteBook = catchAsync(async (req, res, next) => {
 
   const {id} = req.params
 
@@ -96,10 +94,10 @@ export const deleteBook = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 
-export const updateBook = async (req, res, next) => {
+export const updateBook = catchAsync(async (req, res, next) => {
 
   const {id} = req.params
 
@@ -130,11 +128,10 @@ export const updateBook = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 
-export const getBook = async (req, res, next) => {
-  try {
+export const getBook = catchAsync(async (req, res, next) => {
 
     const {id} = req.params
 
@@ -149,14 +146,10 @@ export const getBook = async (req, res, next) => {
       return next(new ErrorResponse('book not found!', 404));
     }
     res.status(200).json({data, status: STATUS_CODE.SUCCESS, message: "book founded successfully"});
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
 
-export const getBooks = async (req, res, next) => {
-  try {
+export const getBooks = catchAsync(async (req, res, next) => {
     
 
     const {limit, startIndex, offer, searchTerm,  sort, order} = req.query
@@ -219,7 +212,4 @@ export const getBooks = async (req, res, next) => {
       });
 
     // return res.status(200).json(listings);
-  } catch (error) {
-    next(error);
-  }
-};
+});

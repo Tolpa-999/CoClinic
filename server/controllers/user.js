@@ -17,7 +17,7 @@ export const test = (req, res) => {
 };
 
 // Update user
-export const updateUser = async (req, res, next) => {
+export const updateUser = catchAsync(async (req, res, next) => {
   if (req.user.userId !== req?.params?.id) {
     return next(
       new ErrorResponse("You can only update your own account", 401)
@@ -33,7 +33,6 @@ export const updateUser = async (req, res, next) => {
 
   const profileImage = req.file ? req.file.filename : null; // Handle profile image update if provided
 
-  try {
     let user = await User.findById(req.user.userId);
 
     if (!user) {
@@ -66,14 +65,9 @@ export const updateUser = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
       message: "user updated successfully",
     });
-  } catch (err) {
-    console.log(err.message);
-    next(err);
-  }
-};
+});
 
-export const deleteUser = async (req, res, next) => {
-  try {
+export const deleteUser = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user.userId);
     if (req.user.userId !== req.params.id && !user.isAdmin)
       return next(
@@ -88,10 +82,7 @@ export const deleteUser = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
       message: "user has been deleted",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
 // export const getUserListings = async (req, res, next) => {
 //   if (req.user.userId === req.params.id) {
@@ -106,8 +97,7 @@ export const deleteUser = async (req, res, next) => {
 //   }
 // };
 
-export const getUser = async (req, res, next) => {
-  try {
+export const getUser = catchAsync(async (req, res, next) => {
 
     const {userId} = req.params
 
@@ -127,13 +117,10 @@ const age = calculateAge(user.birthDate);
 
 res.status(200).json({ data: {...rest, age,}, status: STATUS_CODE.SUCCESS,
   message: "user founded successfully", });
-  } catch (error) {
-    next(error);
-  }
-};
 
-export const getUsers = async (req, res, next) => {
-  try {
+});
+
+export const getUsers = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user.userId);
     if (!user.isAdmin) {
       return next(
@@ -188,13 +175,9 @@ export const getUsers = async (req, res, next) => {
       totalUsers,
       lastMonthUsers,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const searchUser = async (req, res, next) => {
-  try {
+export const searchUser = catchAsync(async (req, res, next) => {
     const { search } = req.body;
 
     const query = new RegExp(search, "i", "g");
@@ -214,16 +197,10 @@ export const searchUser = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
       message: "user founded successfully",
     });
-  } catch (error) {
-    return res.status(500).json({
-      message: error.message || error,
-      error: true,
-    });
-  }
-};
 
-export const userDetails = async (req, res) => {
-  try {
+});
+
+export const userDetails = catchAsync(async (req, res) => {
 
     const token = req.cookies["token"] || "";
 
@@ -236,19 +213,11 @@ export const userDetails = async (req, res) => {
       status: STATUS_CODE.SUCCESS,
       message: "user founded successfully",
     });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      message: error.message || error,
-      error: true,
-    });
-  }
-};
+  });
 
 
 // Approve user by admin
-export const approveUser = async (req, res, next) => {
-  try {
+export const approveUser = catchAsync(async (req, res, next) => {
     const { userId } = req.params;
 
     const user = await User.findById(userId);
@@ -268,7 +237,5 @@ export const approveUser = async (req, res, next) => {
       status: STATUS_CODE.SUCCESS,
       message: "User approved successfully",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+
+});

@@ -312,7 +312,7 @@ export const signup = catchAsync(async (req, res, next) => {
   });
 });
 
-export const verifyEmail = async (req, res, next) => {
+export const verifyEmail = catchAsync(async (req, res, next) => {
   const error = authRequestsValidator("verifyUser", req.body);
   if (error !== true) {
     return next(error);
@@ -352,9 +352,9 @@ export const verifyEmail = async (req, res, next) => {
     status: STATUS_CODE.SUCCESS,
     message: "Your email has been verified successfully ",
   });
-};
+});
 
-export const signin = async (req, res, next) => {
+export const signin = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   const errorInValidation = authRequestsValidator("signin", req.body);
@@ -419,10 +419,10 @@ export const signin = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 
-export const forgetPassword = async (req, res, next) => {
+export const forgetPassword = catchAsync(async (req, res, next) => {
   // 1) get the user based on posted email :
 
   const { email } = req.body;
@@ -468,9 +468,9 @@ export const forgetPassword = async (req, res, next) => {
     console.log(err);
     next(err);
   }
-}
+})
 
-export const verifyCodeForResetPassword = async(req, res ,next) => {
+export const verifyCodeForResetPassword = catchAsync(async(req, res ,next) => {
   const { email, confirmCode } = req.body;
 
   const errorInValidation = authRequestsValidator("reset_password_verify", req.body);
@@ -490,9 +490,9 @@ export const verifyCodeForResetPassword = async(req, res ,next) => {
   }
   res.status(200).json({ status: STATUS_CODE.SUCCESS,
     message: "Code verified, you can reset password",});
-}
+})
 
-export const resetPassword = async (req, res, next) => {
+export const resetPassword = catchAsync(async (req, res, next) => {
   const { email, confirmCode, newPassword } = req.body;
 
   const validationError = authRequestsValidator("reset_password", req.body);
@@ -522,9 +522,9 @@ export const resetPassword = async (req, res, next) => {
   res.status(200).json({ 
     status: STATUS_CODE.SUCCESS,
     message: 'Password has been reset successfully' });
-} 
+})
 
-export const google = async (req, res, next) => {
+export const google = catchAsync(async (req, res, next) => {
   try {
     const { name, email, avatar } = req.body;
     let user = await User.findOne({ email });
@@ -557,13 +557,13 @@ export const google = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
-export const signout = async (req, res, next) => {
+export const signout = catchAsync(async (req, res, next) => {
   try {
     res.clearCookie("token");
     res.status(200).json("User has been logged out!");
   } catch (error) {
     next(error);
   }
-};
+});

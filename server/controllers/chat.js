@@ -1,6 +1,7 @@
 import Conversation from "../models/Conversation.js";
+import catchAsync from "../utils/catchAsync.js";
 
-export const getConversation = async(currentUserId)=>{
+export const getConversation = catchAsync(async(currentUserId)=>{
   if(currentUserId){
       const currentUserConversation = await Conversation.find({
           "$or" : [
@@ -34,4 +35,4 @@ export const getConversation = async(currentUserId)=>{
   }else{
       return []
   }
-}
+})
