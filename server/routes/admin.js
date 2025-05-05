@@ -1,12 +1,13 @@
 
 import {Router} from 'express'
-import { approveUser } from '../controllers/admin.js'
+import { toggleApprove, getUnapprovedUsers } from '../controllers/admin.js'
 import verifyToken  from '../utils/verifyUser.js';
 import verifyAdmin from '../middleware/adminMiddleware.js';
 
 const router = Router()
 
-router.patch('/approve/:userId', verifyToken, verifyAdmin, approveUser);
+router.get('/get-unapproved', verifyToken, verifyAdmin, getUnapprovedUsers);
+router.patch('/toggle-approve/:userId', verifyToken, verifyAdmin, toggleApprove);
 
 
 export default router

@@ -12,26 +12,44 @@ import catchAsync from "../utils/catchAsync.js";
 dotenv.config();
 
 
-// Approve user by admin
-export const approveUser = catchAsync(async (req, res, next) => {
-    const { userId } = req.params;
+export const getUnapprovedUsers = catchAsync(async (req, res, next) => {
+  // Find all users who are doctors or admins and not yet approved
+  const users = await User.find({
+    approved: false,
+    $or: [{ isDoctor: true }, { isAdmin: true }]
+  }).select("-password");
 
-    const user = await User.findById(userId);
+  if (!users || users.length === 0) {
+    return next(new ErrorResponse("No unapproved users found", STATUS_CODE.NOT_FOUND));
+  }
 
-    if (!user) {
-      return next(new ErrorResponse("User not found", 404));
-    }
+  return res.status(200).json({
+    data: users,
+    status: STATUS_CODE.SUCCESS,
+    message: "Unapproved users retrieved successfully"
+  });
+});
 
-    // Mark user as approved
-    user.approved = true;
-    await user.save();
+export const toggleApprove = catchAsync(async (req, res, next) => {
+  const { userId } = req.params;
 
-    const { password, ...data } = user._doc;
+  const user = await User.findById(userId);
 
-    return res.status(200).json({
-      data,
-      status: STATUS_CODE.SUCCESS,
-      message: "User approved successfully",
-    });
+  if (!user) {
+    return next(new ErrorResponse("User not found", 404));
+  }
 
+  // Toggle the approval status
+  user.approved = !user.approved;
+  await user.save();
+
+  const { password, ...data } = user._doc;
+
+  return res.status(200).json({
+    data,
+    status: STATUS_CODE.SUCCESS,
+    message: user.approved
+      ? "User approved successfully"
+      : "User disapproved successfully",
+  });
 });

@@ -16,6 +16,7 @@ import userRoutes from "./routes/user.js";
 import bookRoutes from "./routes/book.js";
 import commentRoutes from "./routes/comment.js";
 import appointmentRoutes from "./routes/appointment.js";
+import adminRoutes from "./routes/admin.js";
 // import aiChatRoutes from "./routes/aichat.js";
 import {server, app} from './socket/index.js'
 import errorHandler from "./middleware/errorHandler.js";
@@ -72,6 +73,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/appointment", appointmentRoutes);
+app.use("/api/admin", adminRoutes);
 // app.use("/api/aichats", aiChatRoutes);
 
 app.all("*", (req, res) => {
