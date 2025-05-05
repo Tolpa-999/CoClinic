@@ -15,9 +15,15 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import bookRoutes from "./routes/book.js";
 import commentRoutes from "./routes/comment.js";
+import appointmentRoutes from "./routes/appointment.js";
 // import aiChatRoutes from "./routes/aichat.js";
 import {server, app} from './socket/index.js'
 import errorHandler from "./middleware/errorHandler.js";
+
+
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+
 
 connectDB();
 const PORT = process.env.PORT || 3000;
@@ -31,39 +37,60 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
 
 
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname); // Get the file extension
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext); // Append the file extension
+// // Set storage engine
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads/');
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//     const ext = path.extname(file.originalname); // Get the file extension
+//     cb(null, file.fieldname + '-' + uniqueSuffix + ext); // Append the file extension
+//   }
+// });
+// // Initialize upload variable
+// const upload = multer({ storage: storage });
+
+// // Endpoint for uploading files
+// app.post('/api/upload', upload.single('file'), (req, res) => {
+//   try {
+//     res.status(200).json({ url: process.env.BASE_URL + `/${req.file.filename}`});
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to upload file' });
+//   }
+// });
+
+// // Define __dirname for ES modules
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// // Set static folder for profile images.
+// app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// cludinary instead of local files
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'user-avatars',
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   }
 });
-// Initialize upload variable
-const upload = multer({ storage: storage });
 
-// Endpoint for uploading files
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    res.status(200).json({ url: process.env.BASE_URL + "/${req.file.filename}"});
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to upload file' });
-  }
-});
+const upload = multer({ storage });
 
-// Define __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// Set static folder for profile images.
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth/users", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/appointment", appointmentRoutes);
 // app.use("/api/aichats", aiChatRoutes);
 
 app.all("*", (req, res) => {
@@ -74,7 +101,7 @@ app.use(errorHandler);
 
 
 server.listen(PORT, () => {
-  console.log("Server is running on port 3000!");
+  console.log("Server is running on port " + PORT );
 });
 
 

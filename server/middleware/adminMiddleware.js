@@ -11,7 +11,7 @@ const verifyAdmin = async(req, res, next) => {
           }
 
         if (!user?.approved) {
-          return next(new ErrorResponse("You are not admin to perform this action till an andmin prove your identity", 403));
+          return next(new ErrorResponse("You are not allow to perform this action till an andmin prove your identity", 403));
         }
     } catch (error) {
         next(error);

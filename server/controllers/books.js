@@ -89,6 +89,10 @@ export const deleteBook = catchAsync(async (req, res, next) => {
     return next(new ErrorResponse('You can only delete your own listings!', 401));
   }
 
+  if(user?.isAdmin && !user?.approved) {
+    return next(new ErrorResponse("You need to be approved first to delete books you haven't created!", 401));
+  }
+
   try {
     await Book.findByIdAndDelete(req.params.id);
     res.status(200).json({message: "book deleted successfully ", status: STATUS_CODE.SUCCESS});
@@ -112,11 +116,15 @@ export const updateBook = catchAsync(async (req, res, next) => {
   if (!bookFounded) {
     return next(new ErrorResponse('book not found!', 404));
   }
-  const admin = await User.findById(req.user.userId)
-  const isAdmin = admin.isAdmin
+  const user = await User.findById(req.user.userId)
+  const isAdmin = user.isAdmin
 
   if (req.user.userId !== bookFounded.userRef && !isAdmin) {
     return next(new ErrorResponse('You can only update your own listings!', 401));
+  }
+
+  if(user?.isAdmin && !user?.approved) {
+    return next(new ErrorResponse("You need to be approved first to update books you haven't created!", 401));
   }
 
   try {
@@ -207,7 +215,7 @@ export const getBooks = catchAsync(async (req, res, next) => {
       return res.status(200).json({
         data,
         status: STATUS_CODE.SUCCESS,
-        message: "book created successfully",
+        message: "books recieved successfully",
         totalPosts,
         lastMonthPosts,
       });

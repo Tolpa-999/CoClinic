@@ -17,7 +17,6 @@ import calculateAge from '../utils/calculateAge.js'
 import {STATUS_CODE} from '../utils/httpStatusCode.js'
 
 
-
 const verifyEmailBody = (passwordResetCode) => {
   // sending password reset code the user email
   return {
@@ -145,170 +144,65 @@ const resetPasswordTokenToMail = (code, userEmail) => {
 };
 
 export const signup = catchAsync(async (req, res, next) => {
-  const { username, birthDate, name, email, password,  gender } = req.body;
+  const { username, birthDate, name, email, password, gender, isDoctor, isAdmin, specialization } = req.body;
 
   const errorInValidation = authRequestsValidator("signup", req.body);
   if (errorInValidation !== true) {
     return next(errorInValidation);
   }
 
-  const userEmail = await User.findOne({ email });
-  const userUsername = await User.findOne({ username });
+  const existingByEmail = await User.findOne({ email });
+  const existingByUsername = await User.findOne({ username });
 
-  const hashedPassword = await bcrypt.hash(password, 15);
-  // const hashedPassword = password
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  if (userEmail) {
-    if (userEmail.emailVerified) {
+  // Helper to send verification email
+  const sendVerification = async (user) => {
+    const code = user.generateEmailVerificationCodeForUsers();
+    await user.save({ validateBeforeSave: false });
+    const emailBody = verifyEmailBody(code);
+    const info = await sendEmail({ html: emailBody.message, subject: emailBody.subject, to: user.email });
+    if (info.rejected.length > 0) throw new Error('Email send failed');
+  };
+
+  // Re-registration flow
+  if (existingByEmail) {
+    if (existingByEmail.emailVerified) {
       return next(new ErrorResponse("Email already exists.", 400));
     }
-
-    userEmail.name = name;
-    userEmail.password = hashedPassword;
-    userEmail.username = username;
-    userEmail.birthDate = birthDate;
-    userEmail.gender = gender;
-    const emailVerificationCode =
-      userEmail.generateEmailVerificationCodeForUsers();
-      
-    await userEmail.save({ validateBeforeSave: false });
-
-    const emailBody = verifyEmailBody(emailVerificationCode);
-
-    try {
-      const info = await sendEmail({
-        html: emailBody.message,
-        subject: emailBody.subject,
-        to: email,
-      });
-
-      if (info.rejected.length > 0) {
-        return next(new ErrorResponse("Something went wrong ", 400));
-      }
-    } catch (err) {
-      console.log(err);
-      next(
-        new ErrorResponse(
-          "An error occurred while sending the email. Please try again later",
-          500
-        )
-      );
-    }
-
+    Object.assign(existingByEmail, { username, name, birthDate, gender, isDoctor, isAdmin });
+    if (isDoctor) existingByEmail.specialization = specialization;
+    const emailRes = await sendVerification(existingByEmail);
     return res.status(200).json({
-
-        user: {
-        name: name,
-        email: email,
-        username: username,
-        birthDate: birthDate,
-        gender: gender,
-        isDoctor: userEmail?.isDoctor,
-      },
-        status: STATUS_CODE.SUCCESS,
-        message: "Verification email sent please verify your email ",
+      data: { username, name, email, birthDate, gender, isDoctor, isAdmin, specialization: isDoctor ? specialization : undefined },
+      status: STATUS_CODE.SUCCESS,
+      message: "Verification email sent. Please verify your email.",
     });
   }
 
-  if (userUsername) {
-    if (userUsername.emailVerified) {
+  if (existingByUsername) {
+    if (existingByUsername.emailVerified) {
       return next(new ErrorResponse("Username already exists.", 400));
     }
-
-    userUsername.name = name;
-    userUsername.email = email;
-    userUsername.password = hashedPassword;
-    userUsername.birthDate = birthDate;
-    userUsername.gender = gender;
-    const emailVerificationCode =
-      userUsername.generateEmailVerificationCodeForUsers();
-    await userUsername.save({ validateBeforeSave: false });
-
-    const emailBody = verifyEmailBody(emailVerificationCode);
-
-    try {
-      const info = await sendEmail({
-        html: emailBody.message,
-        subject: emailBody.subject,
-        to: userUsername.email,
-      });
-
-      if (info.rejected.length > 0) {
-        return next(new ErrorResponse("Something went wrong ", 400));
-      }
-    } catch (err) {
-      console.log(err);
-      next(
-        new ErrorResponse(
-          "An error occurred while sending the email. Please try again later",
-          500
-        )
-      );
-    }
-
+    Object.assign(existingByUsername, { email, name, birthDate, gender, isDoctor, isAdmin });
+    if (isDoctor) existingByUsername.specialization = specialization;
+    const emailRes = await sendVerification(existingByUsername);
     return res.status(200).json({
-        user: {name,
-        email,
-        username,
-        birthDate,
-        isDoctor: userUsername?.isDoctor,
-        gender,
-      },
-        status: STATUS_CODE.SUCCESS,
-        message: "Verification email sent please verify your email ",
+      data: { username, name, email, birthDate, gender, isDoctor, isAdmin, specialization: isDoctor ? specialization : undefined },
+      status: STATUS_CODE.SUCCESS,
+      message: "Verification email sent. Please verify your email.",
     });
   }
 
-  
-
-  const newUser = new User({
-    username,
-    name,
-    birthDate,
-    email,
-    gender,
-    password: hashedPassword,
-  });
-
-  const emailVerificationCode = newUser.generateEmailVerificationCodeForUsers();
+  // New user flow
+  const newUser = new User({ username, name, email, password: hashedPassword, birthDate, gender, isDoctor, isAdmin });
+  if (isDoctor) newUser.specialization = specialization;
   await newUser.save({ validateBeforeSave: false });
-
-  const emailBody = verifyEmailBody(emailVerificationCode);
-
-  try {
-    const info = await sendEmail({
-      html: emailBody.message,
-      subject: emailBody.subject,
-      to: email,
-    });
-
-    if (info.rejected.length > 0) {
-      return next(new ErrorResponse("Something went wrong ", 400));
-    }
-  } catch (err) {
-    console.log(err);
-    next(
-      new ErrorResponse(
-        "An error occurred while sending the email. Please try again later",
-        500
-      )
-    );
-  }
-
-  await newUser.save();
-
+  await sendVerification(newUser);
   res.status(201).json({
-    user: {
-      name,
-      email,
-      username,
-      birthDate,
-      isAdmin: newUser?.isAdmin,
-      isDoctor: newUser?.isDoctor,
-      gender
-    },
+    data: { username, name, email, birthDate, gender, isDoctor, isAdmin, specialization: isDoctor ? specialization : undefined },
     status: STATUS_CODE.SUCCESS,
-        message: "Verification email sent please verify your email ",
+    message: "Verification email sent. Please verify your email.",
   });
 });
 
@@ -388,6 +282,36 @@ export const signin = catchAsync(async (req, res, next) => {
     const readableAge = calculateAge(user.birthDate)
 
 
+    if (user.isAdmin || user.isDoctor) {
+      res
+      .cookie("token", token, {
+        httpOnly: true, // Prevents client-side JavaScript access
+        // secure: true, // Ensures it is sent over HTTPS
+        // sameSite: "None", // Allows sharing cookies across different domains
+        maxAge: 30 * 24 * 60 * 60 * 1000, // Expires in 30 days
+      })
+
+      .status(200)
+
+      .json({
+        data: {
+          token,
+            _id: user._id,
+            username: user.username,
+            name: user.name,
+            gender: user.gender,
+            email: user.email,
+            age: readableAge,
+            isAdmin: user?.isAdmin,
+            isDoctor: user?.isDoctor,
+            avatar: user?.avatar
+        },
+        status: STATUS_CODE.SUCCESS,
+        message: "Logged in successfully but user needs to be approved to be authorized to perform ( admin || doctor ) actions ",
+      });
+    }
+
+
     res
       .cookie("token", token, {
         httpOnly: true, // Prevents client-side JavaScript access
@@ -401,7 +325,6 @@ export const signin = catchAsync(async (req, res, next) => {
       .json({
         data: {
           token,
-          // user: {
             _id: user._id,
             username: user.username,
             name: user.name,
@@ -411,7 +334,6 @@ export const signin = catchAsync(async (req, res, next) => {
             isAdmin: user?.isAdmin,
             isDoctor: user?.isDoctor,
             avatar: user?.avatar
-          // },
         },
         status: STATUS_CODE.SUCCESS,
         message: "Logged in successfully",
@@ -562,7 +484,10 @@ export const google = catchAsync(async (req, res, next) => {
 export const signout = catchAsync(async (req, res, next) => {
   try {
     res.clearCookie("token");
-    res.status(200).json("User has been logged out!");
+    res.status(200).json({
+      status: STATUS_CODE.SUCCESS,
+      message: "User has been logged out!",
+    });
   } catch (error) {
     next(error);
   }

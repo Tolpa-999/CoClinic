@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String
     },
-
     username: {
       type: String,
       required: true,
@@ -73,6 +72,13 @@ const userSchema = new mongoose.Schema(
     isDoctor: {
       type: Boolean,
       default: false
+    },
+    specialization: {
+      type: String,
+      required: function() {
+        return this.isDoctor 
+      },
+      default: undefined
     },
     emailVerifiedCodeExpireIn: {
       type: Date

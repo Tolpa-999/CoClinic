@@ -95,7 +95,11 @@ export const editComment = catchAsync(async (req, res, next) => {
       );
     }
 
-    const editedComment = await Comment.findByIdAndUpdate(
+    if(userIn?.isAdmin && !userIn?.approved) {
+        return next(new ErrorResponse("You need to be approved first to edit comments you haven't created!", 401));
+      }
+
+    const data = await Comment.findByIdAndUpdate(
       req.params.id,
       {
         content: req.body.content,
@@ -103,7 +107,7 @@ export const editComment = catchAsync(async (req, res, next) => {
       { new: true }
     );
     res.status(200).json({
-      editedComment,
+      data,
       status: STATUS_CODE.SUCCESS,
         message: "the comment edit successfully",
     });
@@ -120,6 +124,11 @@ export const deleteComment = catchAsync(async (req, res, next) => {
         new ErrorResponse("You are not allowed to delete this comment", 403)
       );
     }
+
+    if(userIn?.isAdmin && !userIn?.approved) {
+      return next(new ErrorResponse("You need to be approved first to delete comments you haven't created!", 401));
+    }
+
     await Comment.findByIdAndDelete(req.params.id);
     res.status(200).json({
       status: STATUS_CODE.SUCCESS,
@@ -138,6 +147,12 @@ export const getcomments = catchAsync(async (req, res, next) => {
         new ErrorResponse("You are not allowed to get all comments", 403)
       );
     }
+
+    if(user?.isAdmin && !user?.approved) {
+      return next(new ErrorResponse("You need to be approved first get all comments!", 401));
+    }
+
+    
 
     const startIndex = parseInt(req.query.startIndex) || 0;
     const limit = parseInt(req.query.limit) || 9;

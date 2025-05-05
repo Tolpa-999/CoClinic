@@ -62,7 +62,6 @@ export const updateUser = catchAsync(async (req, res, next) => {
 
     res.status(200).json({
       data: {...userData, age},
-      success: true,
       status: STATUS_CODE.SUCCESS,
       message: "user updated successfully",
     });
@@ -75,6 +74,10 @@ export const deleteUser = catchAsync(async (req, res, next) => {
         new ErrorResponse("You can only delete your own account!", 401)
       );
 
+      if(user?.isAdmin && !user?.approved) {
+        return next(new ErrorResponse("You need to be approved first to delete users", 401));
+      }
+
     await User.findByIdAndDelete(req.params.id);
     if (req.user.userId === req.params.id) {
       res.clearCookie("token");
@@ -84,19 +87,6 @@ export const deleteUser = catchAsync(async (req, res, next) => {
       message: "user has been deleted",
     });
 });
-
-// export const getUserListings = async (req, res, next) => {
-//   if (req.user.userId === req.params.id) {
-//     try {
-//       const listings = await Listing.find({ userRef: req.params.id });
-//       res.status(200).json(listings);
-//     } catch (error) {
-//       next(error);
-//     }
-//   } else {
-//     return next(new ErrorResponse("You can only view your own listings!", 401));
-//   }
-// };
 
 export const getUser = catchAsync(async (req, res, next) => {
 
@@ -128,6 +118,10 @@ export const getUsers = catchAsync(async (req, res, next) => {
         new ErrorResponse("You are not allowed to see all users", 403)
       );
     }
+
+    if(user?.isAdmin && !user?.approved) {
+          return next(new ErrorResponse("You need to be approved first get all users !", 401));
+        }
 
     const {startIndex, limit, sort} = req.query
 
@@ -172,7 +166,7 @@ export const getUsers = catchAsync(async (req, res, next) => {
     res.status(200).json({
       data,
       status: STATUS_CODE.SUCCESS,
-      message: "you edit the comment successfully",
+      message: "all users ",
       totalUsers,
       lastMonthUsers,
     });
@@ -217,26 +211,4 @@ export const userDetails = catchAsync(async (req, res) => {
   });
 
 
-// Approve user by admin
-export const approveUser = catchAsync(async (req, res, next) => {
-    const { userId } = req.params;
 
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return next(new ErrorResponse("User not found", 404));
-    }
-
-    // Mark user as approved
-    user.approved = true;
-    await user.save();
-
-    const { password, ...data } = user._doc;
-
-    return res.status(200).json({
-      data,
-      status: STATUS_CODE.SUCCESS,
-      message: "User approved successfully",
-    });
-
-});
