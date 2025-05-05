@@ -39,6 +39,12 @@ export const bookAppointment = async (req, res, next) => {
 
   const end = new Date(startDate.getTime() + 30 * 60 * 1000);
 
+  const currentDate = new Date()
+
+  if (startDate < currentDate) {
+    return next(new ErrorResponse("can't book appointment in the past ", STATUS_CODE.ERROR));
+  }
+
 
   // 1) Check for overlapping appointments:
   const conflict = await Appointment.findOne({
