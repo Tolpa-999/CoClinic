@@ -22,17 +22,17 @@ export const bookAppointment = async (req, res, next) => {
   const patientExists = User.findById(req.user.userId)
 
   if (!patientExists) {
-    return next(new ErrorResponse("patient not found", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("patient not found", 404));
   }
 
   const doctor = await User.findById(doctorId)
 
   if (!doctor) {
-    return next(new ErrorResponse("doctor not found", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("doctor not found", 404));
   }
 
   if(!doctor.isDoctor) {
-    return next(new ErrorResponse("you only can book appointment with doctors", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("you only can book appointment with doctors", 403));
   }
 
   const startDate = new Date(start)
@@ -41,7 +41,7 @@ export const bookAppointment = async (req, res, next) => {
 
   const currentDate = new Date();
 if (startDate.getTime() <= currentDate.getTime()) {
-  return next(new ErrorResponse("Cannot book appointment in the past", STATUS_CODE.ERROR));
+  return next(new ErrorResponse("Cannot book appointment in the past", 400));
 }
 
 
@@ -54,7 +54,7 @@ if (startDate.getTime() <= currentDate.getTime()) {
     ]
   });
   if (conflict) {
-    return next(new ErrorResponse("This doctor isn't free at this time ", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("This doctor isn't free at this time ", 400));
   }
 
   // 2) Create appointment
