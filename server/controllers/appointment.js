@@ -160,7 +160,7 @@ export const updateAppointmentStatus = catchAsync(async (req, res, next) => {
   // Validate params and body
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(new ErrorResponse("Invalid appointment ID", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("Invalid appointment ID", 400));
   }
   const errorInValidation = appointmentValidator("updateStatus", req.body);
   if (errorInValidation !== true) {
@@ -170,19 +170,19 @@ export const updateAppointmentStatus = catchAsync(async (req, res, next) => {
   const { status } = req.body;
   const data = await Appointment.findById(id);
   if (!data) {
-    return next(new ErrorResponse("Appointment not found", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("Appointment not found", 404));
   }
 
   // Only doctor or admin can change status
   if (String(data.doctor) !== req.user.userId && !req.user.isAdmin) {
-    return next(new ErrorResponse("Unauthorized to update status", STATUS_CODE.FORBIDDEN));
+    return next(new ErrorResponse("Unauthorized to update status", 403));
   }
 
   // Prevent illegal transitions
   if (["cancelled", "completed"].includes(data.status)) {
     return next(new ErrorResponse(
       `Cannot modify a ${data.status} appointment`,
-      STATUS_CODE.ERROR
+      400
     ));
   }
 
@@ -200,33 +200,33 @@ export const updateAppointmentStatus = catchAsync(async (req, res, next) => {
 export const cancelAppointment = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(new ErrorResponse("Invalid appointment ID", STATUS_CODE.ERROR));
+    return next(new ErrorResponse("Invalid appointment ID", 401));
   }
 
   const data = await Appointment.findById(id);
   if (!data) {
-    return next(new ErrorResponse("Appointment not found", STATUS_CODE.NOT_FOUND));
+    return next(new ErrorResponse("Appointment not found", 404));
   }
 
   // Authorization
   const isPatient = String(data.patient) === req.user.userId;
   const isDoctor  = String(data.doctor ) === req.user.userId;
   if (!isPatient && !isDoctor && !req.user.isAdmin) {
-    return next(new ErrorResponse("Unauthorized to cancel", STATUS_CODE.FORBIDDEN));
+    return next(new ErrorResponse("Unauthorized to cancel", 403));
   }
 
   // Business rules
   const now = new Date();
   if (data.start < now) {
-    return next(new ErrorResponse("Cannot cancel past appointments", STATUS_CODE.BAD_REQUEST));
+    return next(new ErrorResponse("Cannot cancel past appointments", 400));
   }
   if (data.status === "cancelled") {
-    return next(new ErrorResponse("Appointment is already cancelled", STATUS_CODE.BAD_REQUEST));
+    return next(new ErrorResponse("Appointment is already cancelled", 400));
   }
   if (isPatient && data.status !== "pending") {
     return next(new ErrorResponse(
       "Patients can only cancel pending appointments",
-      STATUS_CODE.BAD_REQUEST
+      403
     ));
   }
 
