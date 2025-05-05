@@ -16,7 +16,7 @@ const router = Router();
 // Patients
 router.post('/create', verifyToken, bookAppointment);
 
-router.get('/me', verifyToken, getPatientAppointments);
+router.get('/patient', verifyToken, getPatientAppointments);
 router.get('/doctor', verifyToken, verifyDoctor, getDoctorAppointments);
 router.get('/doctors', getDoctors)
 

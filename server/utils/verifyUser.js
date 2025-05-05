@@ -19,6 +19,8 @@ const verifyToken = async (req, res, next) => {
 
     req.user = decoded;
 
+    console.log('user in verify user middlerware  ====> ', decoded )
+
 
     return next();
   } catch (err) {

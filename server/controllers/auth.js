@@ -282,37 +282,11 @@ export const signin = catchAsync(async (req, res, next) => {
     const readableAge = calculateAge(user.birthDate)
 
 
-    if (user.isAdmin || user.isDoctor) {
-      res
-      .cookie("token", token, {
-        httpOnly: true, // Prevents client-side JavaScript access
-        // secure: true, // Ensures it is sent over HTTPS
-        // sameSite: "None", // Allows sharing cookies across different domains
-        maxAge: 30 * 24 * 60 * 60 * 1000, // Expires in 30 days
-      })
 
-      .status(200)
-
-      .json({
-        data: {
-          token,
-            _id: user._id,
-            username: user.username,
-            name: user.name,
-            gender: user.gender,
-            email: user.email,
-            age: readableAge,
-            isAdmin: user?.isAdmin,
-            isDoctor: user?.isDoctor,
-            avatar: user?.avatar
-        },
-        status: STATUS_CODE.SUCCESS,
-        message: "Logged in successfully but user needs to be approved to be authorized to perform ( admin || doctor ) actions ",
-      });
-    }
 
 
     res
+      .clearCookie("token")
       .cookie("token", token, {
         httpOnly: true, // Prevents client-side JavaScript access
         // secure: true, // Ensures it is sent over HTTPS
