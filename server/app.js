@@ -22,7 +22,6 @@ import errorHandler from "./middleware/errorHandler.js";
 
 
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 
 connectDB();
@@ -74,14 +73,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'user-avatars',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }]
-  }
-});
+
 
 const upload = multer({ storage });
 
