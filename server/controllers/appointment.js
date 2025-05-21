@@ -243,7 +243,7 @@ export const cancelAppointment = catchAsync(async (req, res, next) => {
 
 export const getDoctors = catchAsync( async (req ,res, next) => {
 
-  const data = await User.find({isDoctor: true, approved: true})
+  const data = await User.find({isDoctor: true, approved: true}).select("-password -emailVerifiedCode -approved -emailVerifiedCodeExpireIn -isAdmin -__v -isDoctor -isOnline -lastActive -createdAt -updatedAt");
 
   if(!data) {
     next(new ErrorResponse("there is no doctors right now", 404))

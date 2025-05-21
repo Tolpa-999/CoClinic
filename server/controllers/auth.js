@@ -307,7 +307,8 @@ export const signin = catchAsync(async (req, res, next) => {
             age: readableAge,
             isAdmin: user?.isAdmin,
             isDoctor: user?.isDoctor,
-            avatar: user?.avatar
+            avatar: user?.avatar,
+            approved: user?.approved,
         },
         status: STATUS_CODE.SUCCESS,
         message: "Logged in successfully",

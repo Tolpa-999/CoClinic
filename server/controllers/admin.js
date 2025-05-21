@@ -41,7 +41,7 @@ export const toggleApprove = catchAsync(async (req, res, next) => {
 
   // Toggle the approval status
   user.approved = !user.approved;
-  await user.save();
+  await user.save({validateBeforeSave: false});
 
   const { password, ...data } = user._doc;
 

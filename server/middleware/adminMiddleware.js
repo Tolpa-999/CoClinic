@@ -4,9 +4,20 @@ import ErrorResponse from "../utils/errorResponse.js";
 const verifyAdmin = async(req, res, next) => {
 
     try {
-        const id = req.user._id;
+        const id = req.user.userId;  
         const user = await User.findById(id);
-        if (user?.isAdmin !== true) {
+
+        if (!user) {
+          if (user?.isAdmin != true) {
+            return next(new ErrorResponse("user not found", 404));
+          }
+        }
+
+
+        console.log("user in admin middleware ===> ", user)
+
+        
+        if (user?.isAdmin != true) {
             return next(new ErrorResponse("You are not admin to perform this action", 403));
           }
 
